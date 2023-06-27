@@ -6,24 +6,35 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
 </head>
 <body>
-    <video autoplay playsinline id="webcam" style="display:none"></video>
-    <canvas id="canvas"></canvas>
+    <video autoplay playsinline muted id="webcam" style="display:none"></video>    <canvas id="canvas"></canvas>
 
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
         const context = canvas.getContext('2d');
 
-        navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}})
-            .then(stream => {
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    detectFromVideoFrame(video);
-                };
-            });
+        navigator.mediaDevices.enumerateDevices().then((devices) => {
+            var deviceId = devices.filter(
+            (device) => device.kind == "videoinput"
+        );
+            deviceId = deviceId[deviceId.length - 1].deviceId;
 
+        navigator.mediaDevices.getUserMedia({
+            video: {
+            deviceId: deviceId,
+        facingMode: 'environment'
+        }
+    })
+  .then((stream) => {
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      video.play();
+      detectFromVideoFrame(video);
+    };
+  })
+});
         const modelPromise = cocoSsd.load();
 
         async function detectFromVideoFrame(video) {
