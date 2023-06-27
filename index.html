@@ -1,66 +1,65 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Real-time Object Detection</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"> </script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
-</head>
-<body>
-    <video autoplay playsinline muted id="webcam" style="display:none"></video>    <canvas id="canvas"></canvas>
-
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  </head>
+  <body>
+    <video autoplay playsinline muted id="webcam" style="display: none"></video>
+    <canvas id="canvas"></canvas>
     <script>
-        const video = document.getElementById('webcam');
-        const canvas = document.getElementById('canvas');
-        const context = canvas.getContext('2d');
+      const video = document.getElementById('webcam');
+      const canvas = document.getElementById('canvas');
+      const context = canvas.getContext('2d');
 
-        navigator.mediaDevices.enumerateDevices().then((devices) => {
-            var deviceId = devices.filter(
-            (device) => device.kind == "videoinput"
-        );
-            deviceId = deviceId[deviceId.length - 1].deviceId;
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        var deviceId = devices.filter(device => device.kind == 'videoinput');
+        deviceId = deviceId[deviceId.length - 1].deviceId;
 
-        navigator.mediaDevices.getUserMedia({
+        navigator.mediaDevices
+          .getUserMedia({
             video: {
-            deviceId: deviceId,
-        facingMode: 'environment'
-        }
-    })
-  .then((stream) => {
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      video.play();
-      detectFromVideoFrame(video);
-    };
-  })
-});
-        const modelPromise = cocoSsd.load();
+              deviceId: deviceId,
+              facingMode: 'environment',
+            },
+          })
+          .then(stream => {
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              video.play();
+              detectFromVideoFrame(video);
+            };
+          });
+      });
+      const modelPromise = cocoSsd.load();
 
-        async function detectFromVideoFrame(video) {
-            const model = await modelPromise;
-            const predictions = await model.detect(video);
+      async function detectFromVideoFrame(video) {
+        const model = await modelPromise;
+        const predictions = await model.detect(video);
 
-            // Clear previous drawings before new predictions are drawn
-            context.clearRect(0, 0, canvas.width, canvas.height);
+        // Clear previous drawings before new predictions are drawn
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
-            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-            predictions.forEach(prediction => {
-                context.beginPath();
-                context.rect(...prediction.bbox);
-                context.lineWidth = 2;
-                context.strokeStyle = 'yellow';
-                context.fillStyle = 'yellow';
-                context.stroke();
-                context.fillText(
-                    `${prediction.class} (${Math.round(prediction.score * 100)}%)`,
-                    prediction.bbox[0],
-                    prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
-                );
-            });
+        context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+        predictions.forEach(prediction => {
+          context.beginPath();
+          context.rect(...prediction.bbox);
+          context.lineWidth = 2;
+          context.strokeStyle = 'yellow';
+          context.fillStyle = 'yellow';
+          context.stroke();
+          context.fillText(
+            `${prediction.class} (${Math.round(prediction.score * 100)}%)`,
+            prediction.bbox[0],
+            prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10,
+          );
+        });
 
-            requestAnimationFrame(() => detectFromVideoFrame(video));
-        }
+        requestAnimationFrame(() => detectFromVideoFrame(video));
+      }
     </script>
-</body>
+  </body>
 </html>
