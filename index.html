@@ -1,16 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <title>Basic WebAR Scene</title>
+    <title>Real-time Object Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"> </script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"> </script>
 </head>
-<body style='margin : 0px; overflow: hidden;'>
-    <a-scene embedded arjs="trackingMethod: best; sourceType: webcam;">
-        <a-camera>
-            <a-box position='0 0 -3' material='color: yellow;'></a-box>
-        </a-camera>
-    </a-scene>
+<body>
+    <video autoplay id="webcam" style="display:none"></video>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(stream => {
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    detectFromVideoFrame(video);
+                };
+            });
+
+        const modelPromise = cocoSsd.load();
+
+        async function detectFromVideoFrame(video) {
+            const model = await modelPromise;
+            const predictions = await model.detect(video);
+
+            // Clear previous drawings before new predictions are drawn
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            predictions.forEach(prediction => {
+                context.beginPath();
+                context.rect(...prediction.bbox);
+                context.lineWidth = 2;
+                context.strokeStyle = 'yellow';
+                context.fillStyle = 'yellow';
+                context.stroke();
+                context.fillText(
+                    `${prediction.class} (${Math.round(prediction.score * 100)}%)`,
+                    prediction.bbox[0],
+                    prediction.bbox[1] > 10 ? prediction.bbox[1] - 5 : 10
+                );
+            });
+
+            requestAnimationFrame(() => detectFromVideoFrame(video));
+        }
+    </script>
 </body>
 </html>
-
